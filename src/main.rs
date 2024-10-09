@@ -63,31 +63,62 @@ fn main() {
                 mouse_down = true;
                 x0 = mouse_x as u32;
                 y0 = mouse_y as u32;
-            } else if !window.get_mouse_down(MouseButton::Left) && mouse_down {
-                mouse_down = false;
+            } else if window.get_mouse_down(MouseButton::Left) && mouse_down {
                 let x1 = mouse_x as u32;
                 let y1 = mouse_y as u32;
 
                 // Calculate the new parameters
                 let (dx, dy) = (x1 as f32 - x0 as f32, y1 as f32 - y0 as f32);
-                let (x0, y0) = (x1, y1);
+                 (x0, y0) = (x1, y1);
 
                 params.left -= dx * params.size / 1000.0;
                 params.bottom -= dy * params.size / 1000.0;
                 needs_update = true;
+            } else {
+                mouse_down = false;
             }
         }
 
-        // Handle zooming with keys
+        // Handle zooming with keys (it should zoom towards the mouse position)
         if window.is_key_down(Key::E) {
             // Zoom in
-            params.size *= 0.9;
+
+            if let Some((mouse_x, mouse_y)) = window.get_mouse_pos(MouseMode::Discard) {
+                let mouse_real_x = mouse_x as f32 * params.size / 1000.0 + params.left;
+                let mouse_real_y = mouse_y as f32 * params.size / 1000.0 + params.bottom;
+                params.size *= 0.9;
+                params.left = mouse_real_x - mouse_x as f32 * params.size / 1000.0;
+                params.bottom = mouse_real_y - mouse_y as f32 * params.size / 1000.0;
+
+            } else {
+                // Zoom in towards the center
+                params.left += params.size * 0.05;
+                params.bottom += params.size * 0.05;
+                params.size *= 0.9;
+
+            }
+
             needs_update = true;
         }
 
         if window.is_key_down(Key::Q) {
             // Zoom out
-            params.size /= 0.9;
+
+            if let Some((mouse_x, mouse_y)) = window.get_mouse_pos(MouseMode::Discard) {
+                let mouse_real_x = mouse_x as f32 * params.size / 1000.0 + params.left;
+                let mouse_real_y = mouse_y as f32 * params.size / 1000.0 + params.bottom;
+                params.size /= 0.9;
+                params.left = mouse_real_x - mouse_x as f32 * params.size / 1000.0;
+                params.bottom = mouse_real_y - mouse_y as f32 * params.size / 1000.0;
+
+            } else {
+                // Zoom out towards the center
+                params.left -= params.size * 0.05;
+                params.bottom -= params.size * 0.05;
+                params.size /= 0.9;
+
+            }
+
             needs_update = true;
         }
 
